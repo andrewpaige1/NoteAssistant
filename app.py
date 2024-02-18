@@ -29,11 +29,7 @@ oauth.register(
 )
 
 API_BASE_URL = env.get("API_BASE_URL")
-headers = {
-    'X-Auth-Email':'keeperpaige@gmail.com',
-    'X-Auth-Key': env.get("API_TOKEN"),
-    'Content-Type': 'application/json'
-}
+headers = {"Authorization": "Bearer " + env.get("API_TOKEN")}
 
 def run(model, prompt):
     input = {
