@@ -1,0 +1,159 @@
+{% extends 'menu.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<head>
+  <link rel="logo" href="{{ url_for('static', filename='favicon.png') }}">
+</head>
+<body>
+<!-- Navbar -->
+<style>
+  .editor-toolbar-logo {
+height: 150px; /* Smaller logo for better alignment */
+margin-right: 15px;
+}
+</style>
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    {% if session %}
+    <a class="" href="/">
+      <img src="{{ url_for('static', filename='Notes.png') }}" alt="Notes" class="editor-toolbar-logo">
+  </a>
+  {% endif %}
+
+  </div>
+
+  <div id="navbarBasicExample" class="navbar-menu">
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <div class="buttons">
+          {% if session %}
+            <a href="/logout" class="button is-light">Log out</a>
+          {% else %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Content -->
+<section class="section">
+  <div class="container">
+    {% if session %}
+      <div class="columns is-multiline">
+        {% if user_docs|length > 0 %}
+          {% for doc in user_docs %}
+            <!-- Document Tiles -->
+            <div class="column is-one-quarter">
+              <a href="{{ url_for('edit_document', user=doc.user, doc_name=doc.name) }}" class="box" style="height: 100%;">
+                <p class="title is-5">{{ doc.name }}</p>
+                <p class="subtitle is-6">by {{ doc.user }}.</p>
+                <button class="delete" aria-label="delete"></button>
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="notification is-info">
+            No documents found. Create a new document to get started.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Create New Document Button -->
+      <button class="button is-link js-modal-trigger" data-target="modal-js-example">
+        Create new document
+      </button>
+    {% else %}
+    <div class="level-item">
+      <img src="{{ url_for('static', filename='favicon.png') }}" alt="Notes" style="height: 300px;">
+      </div>
+      <div class="level-item">
+        <h1 class="title">Note Assistant</h1>
+      </div>
+      <div class="level-item">
+        <p class="is-size-5">Your own assistant to help you succeed in the classroom</p>
+      </div>
+      <div class="level-item">
+        <img src="{{ url_for('static', filename='landing.jpg') }}" alt="Notes" style="height: 300px;">
+        </div>
+        <div class="level-item">
+          <p class="is-size-5">Notes Assistant uses natural langauge processing to help suggest questions for you to ask your professor</p>
+        </div>
+        <div class="level-item">
+          <p class="is-size-5">Along with keeping you engage with reinforcement questions</p>
+        </div>
+        <div class="level-item">
+          <img src="{{ url_for('static', filename='pencil.jpg') }}" alt="Notes" style="height: 300px;">
+          </div>
+          <div class="level-item">
+            <p class="is-size-5">Start enhancing your classroom experience</p>
+          </div>
+      <div class="level-item">
+      <a href="/login"><button class="button is-link">log in</button></a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Create Document Modal -->
+<div id="modal-js-example" class="modal">
+  <div class="modal-background"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title">New Document</p>
+      <button class="delete" aria-label="close" onclick="closeAllModals()"></button>
+    </header>
+    <form action="{{url_for('createDoc')}}" method="post">
+      <section class="modal-card-body">
+        <div class="field">
+          <label class="label">Document Name</label>
+          <div class="control">
+            <input class="input" type="text" name="docName" placeholder="Enter document name">
+          </div>
+        </div>
+      </section>
+      <footer class="modal-card-foot">
+        <button type="submit" class="button is-success">Create</button>
+        <button type="button" class="button" onclick="closeAllModals()">Cancel</button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Modal functionality
+  const openModalButtons = document.querySelectorAll('.js-modal-trigger');
+  const closeModalButtons = document.querySelectorAll('.modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button');
+
+  openModalButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const modal = document.getElementById(button.dataset.target);
+      modal.classList.add('is-active');
+    });
+  });
+
+  closeModalButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      button.closest('.modal').classList.remove('is-active');
+    });
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === "Escape") {
+      closeAllModals();
+    }
+  });
+
+  function closeAllModals() {
+    (document.querySelectorAll('.modal') || []).forEach(modal => {
+      modal.classList.remove('is-active');
+    });
+  }
+});
+</script>
+
+</body>
+{% endblock %}

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecture Assistant</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="image/png" href="{{ url_for('static', filename='Notes.png') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"></head>
+    <script src="https://cdn.tiny.cloud/1/2cxngtnvj69ca9gyix4ztgv78xg5boltbbeej9ju19axoa88/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        tinymce.init({
+          selector: 'textarea#typer',
+          plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount checklist mediaembed casechange export formatpainter pageembed linkchecker a11ychecker tinymcespellchecker permanentpen powerpaste advtable advcode editimage advtemplate ai mentions tinycomments tableofcontents footnotes mergetags autocorrect typography inlinecss',
+          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+          tinycomments_mode: 'embedded',
+          tinycomments_author: 'Author name',
+          mergetags_list: [
+            { value: 'First.Name', title: 'First Name' },
+            { value: 'Email', title: 'Email' },
+          ],
+          ai_request: (request, respondWith) => respondWith.string(() => Promise.reject("See docs to implement AI Assistant")),
+          setup: function(editor) {
+    editor.on('keydown', function(e) {
+      document.getElementById('status').innerHTML = 'Typing...';
+      window.clearTimeout(timer);
+    });
+    editor.on('keyup', function(e) {
+      window.clearTimeout(timer); // prevent errant multiple timeouts from being generated
+      timer = window.setTimeout(() => {
+        document.getElementById('status').innerHTML = 'All done typing! Preparing to save content...';
+        // Retrieve the content from TinyMCE
+        var content = editor.getContent({format: 'text'});
+        // Display the content in console or prepare it for saving to the database
+        saveDocument(content)
+        console.log("Content to save:", content);
+        // Here, you would typically make an AJAX call to send the content to your server for database storage
+      }, timeoutVal);
+    });
+  }
+        });
+        let timer,
+    timeoutVal = 1000; // time it takes to wait for user to stop typing in ms
+    const user = "{{ user }}";
+    console.log(user)
+    const docName2 = "{{ doc_name }}";
+    console.log(docName2)
+async function saveDocument(content) {
+    const settings = {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user: user,
+            docName: docName2,
+            content: content
+        })
+    };
+  try {
+    const response = await fetch('/saveDocument', settings);
+    const data = await response.json(); // Assuming your server responds with JSON
+    console.log("Save successful:", data);
+    document.getElementById('status').innerHTML = 'Content saved successfully!';
+  } catch (error) {
+    console.error("Error saving document:", error);
+    document.getElementById('status').innerHTML = 'Failed to save content.';
+  }
+}
+async function handleSuggest(prompt, typeOfRequest) {
+    const content2 = tinymce.get('typer').getContent({format: 'text'});
+    const settings = {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt + " " + content2 })
+    };
+
+    try {
+        const response = await fetch('/suggestQuestion', settings);
+        const data = await response.json();
+        console.log("Suggestion successful:", data);
+        // Update modal content
+        if(typeOfRequest === 'suggest') {
+            document.getElementById('suggestedQuestionContent').textContent = data || 'No suggestion available.';
+        // Open modal
+            document.getElementById('questionModal').classList.add('is-active');
+        } else if(typeOfRequest === 'question') {
+            document.getElementById('answerContent').textContent = data || 'No suggestion available.';
+        // Open modal
+            openAnswerModal()
+        }  else if(typeOfRequest === 'submittedAnswer') {
+            closeAnswerModal()
+            document.getElementById('rightOrWrongContent').textContent = data || 'No suggestion available.';
+            openAnsModal()
+
+
+        }
+    } catch (error) {
+        console.error("Error getting suggestion:", error);
+    }
+}
+
+function closeModal() {
+    document.getElementById('questionModal').classList.remove('is-active');
+}
+
+function closeAnsModal() {
+    document.getElementById('rightOrWrong').classList.remove('is-active');
+}
+
+function closeAnswerModal() {
+    document.getElementById('answerModal').classList.remove('is-active');
+}
+
+
+async function saveDocument(content) {
+    const settings = {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user: user,
+            docName: docName2,
+            content: content
+        })
+    };
+  try {
+    const response = await fetch('/saveDocument', settings);
+    const data = await response.json(); // Assuming your server responds with JSON
+    console.log("Save successful:", data);
+    document.getElementById('status').innerHTML = 'Content saved successfully!';
+  } catch (error) {
+    console.error("Error saving document:", error);
+    document.getElementById('status').innerHTML = 'Failed to save content.';
+  }
+}
+
+// Dummy function for submitting an answer. Adapt this to your needs.
+function submitAnswer() {
+    const answer = document.getElementById('userAnswer').value;
+    console.log("User's answer:", answer);
+    // Here, implement your logic to send the answer to your server or process it as needed
+    handleSuggest('My answer is ' + ' ' + answer + '. Is it right for the question you asked based on the content?' + 
+    document.getElementById('answerContent').innerText , 'submittedAnswer')
+    closeAnsModal(); // Close the modal after submitting the answer
+}
+
+function openAnswerModal() {
+    document.getElementById('answerModal').classList.add('is-active');
+}
+
+function openAnsModal() {
+    document.getElementById('rightOrWrong').classList.add('is-active');
+}
+
+
+      </script>
+    </head>
+<body>
+    <!-- Modal -->
+<div class="modal" id="questionModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Suggested Question</p>
+        <button class="delete" aria-label="close" onclick="closeModal()"></button>
+      </header>
+      <section class="modal-card-body">
+        <!-- Content will be injected here -->
+        <div id="suggestedQuestionContent"></div>
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button is-success" onclick="closeModal()">OK</button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal" id="rightOrWrong">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Suggested Question</p>
+        <button class="delete" aria-label="close" onclick="closeAnsModal()"></button>
+      </header>
+      <section class="modal-card-body">
+        <!-- Content will be injected here -->
+        <div id="rightOrWrongContent"></div>
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button is-success" onclick="closeAnsModal()">OK</button>
+      </footer>
+    </div>
+  </div>
+  
+<!-- Answer Modal -->
+<div class="modal" id="answerModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Your Answer</p>
+        <button class="delete" aria-label="close" onclick="closeAnswerModal()"></button>
+      </header>
+      <section class="modal-card-body">
+        <div id="answerContent"></div>
+        <!-- Textarea for the answer -->
+        <textarea id="userAnswer" class="textarea" placeholder="Type your answer here..."></textarea>
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button is-success" onclick="submitAnswer()">Submit Answer</button>
+        <button class="button" onclick="closeAnswerModal()">Cancel</button>
+      </footer>
+    </div>
+  </div>
+  <style>
+        .editor-toolbar-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: -75px;
+            padding-bottom: 5px;
+        }
+
+        .editor-toolbar-logo {
+            height: 125px; /* Smaller logo for better alignment */
+            margin-right: 15px;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+        }
+
+        .editor-toolbar-button {
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 5px 10px;
+            margin-left: 5px; /* Space between buttons */
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            border-radius: 4px;
+        }
+
+        .editor-toolbar-button:hover {
+            background-color: #e2e2e2;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        #status {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #typer {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1); /* Add slight shadow for depth */
+        }
+</style>
+  <section class="section">
+    <div class="container">
+        <div class="editor-toolbar-container">
+            <a href="{{ url_for('home') }}">
+                <img src="{{ url_for('static', filename='Notes.png') }}" alt="Notes" class="editor-toolbar-logo">
+            </a>
+            <div class="editor-toolbar">
+                <span>{{ doc_name }}</span>
+                <button onclick="handleSuggest('suggest an insightful, and concise question to ask the professor based on the following info', 'suggest')" 
+                class="editor-toolbar-button">Suggest a Question</button>
+                <button onclick="handleSuggest('ask me a different question to quiz me on the following info do not ask the following questions again ' + (document.getElementById('answerContent')?.innerText || ''), 'question')" 
+                class="editor-toolbar-button">Ask Me a Question</button>
+            </div>
+        </div>
+    </div>
+</section>
+    <div id="status"></div>
+
+    <form method="post">
+        <textarea id="typer" style="height: 100vh;">
+            {{ content | safe }}
+          </textarea>    
+    </form>
+  </body>
+
+</html>
