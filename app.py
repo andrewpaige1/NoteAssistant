@@ -7,6 +7,7 @@ from dotenv import find_dotenv, load_dotenv
 from flask import Flask, redirect, render_template, session, url_for, request
 from bson.json_util import loads, dumps
 import requests
+import certifi
 
 ENV_FILE = find_dotenv()
 if ENV_FILE:
@@ -14,7 +15,7 @@ if ENV_FILE:
     
 app = Flask(__name__)
 app.secret_key = env.get("APP_SECRET_KEY")
-app.config["MONGO_URI"] = env.get("MONGO_URI")
+app.config["MONGO_URI"] = env.get("MONGO_URI") + "&tlsCAFile=" + certifi.where()
 mongo = PyMongo(app)
 oauth = OAuth(app)
 
@@ -74,6 +75,14 @@ def logout():
             quote_via=quote_plus,
         )
     )
+
+@app.route('/deleteDocument', methods=['POST'])
+def delete_document():
+    req = request.json
+    user = req['user']
+    doc_name = req['docName']
+    mongo.db.documents.delete_one({'name': doc_name, 'user': user})
+    return {'status': 'success'}
 
 @app.route('/saveDocument', methods=['POST'])
 def save_document():
